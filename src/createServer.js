@@ -4,34 +4,25 @@
 const http = require('http');
 const { convertToCase } = require('./convertToCase/convertToCase.js');
 
-const PORT = process.env.PORT || 3000;
+// const PORT = process.env.PORT || 3000;
 const cases = ['SNAKE', 'KEBAB', 'CAMEL', 'PASCAL', 'UPPER'];
 
 function createServer() {
   const server = http.createServer((req, res) => {
-    // res.setHeader('Content-Type', 'application/json');
+    // const normalizedURL = new URL(req.url, `http://localhost:${PORT}`);
+    const [path, queryString] = req.url.split('?');
 
-    const normalizedURL = new URL(req.url, `http://localhost:${PORT}`);
+    const text = path.slice(1); // текст из URL
 
-    const normReq = normalizedURL.pathname.slice(1);
-    const toCase = normalizedURL.searchParams.get('toCase');
-
-    const normalizedToCase = toCase ? toCase.toUpperCase() : '';
-    const caseName = cases.includes(normalizedToCase) ? normalizedToCase : '';
-
-    let text = '';
-
-    if (
-      normReq.length > 0 &&
-      !normReq.startsWith('favicon') &&
-      !normReq.startsWith('.well-known')
-    ) {
-      text = normReq || '';
-    }
+    // получаем значение toCase из query, если есть
+    const toCaseParam = queryString?.split('=')[1] || '';
+    const caseName = cases.includes(toCaseParam.toUpperCase())
+      ? toCaseParam.toUpperCase()
+      : '';
 
     let findObject = {};
 
-    if (caseName && text) {
+    if (text && caseName) {
       findObject = convertToCase(text, caseName);
     }
 
@@ -45,7 +36,7 @@ function createServer() {
       });
     }
 
-    if (!toCase) {
+    if (!toCaseParam) {
       errorMessages.push({
         message:
           '"toCase" query param is required. Correct request is: ' +
@@ -54,8 +45,8 @@ function createServer() {
     } else if (!caseName) {
       errorMessages.push({
         message:
-          'This case is not supported.' +
-          ' Available cases: SNAKE, KEBAB, CAMEL, PASCAL, UPPER.',
+          'This case is not supported. Available cases: ' +
+          'SNAKE, KEBAB, CAMEL, PASCAL, UPPER.',
       });
     }
 
@@ -69,22 +60,19 @@ function createServer() {
     }
 
     const result = {
-      originalCase: findObject.originalCase, // то, что вернул convertToCase
-      targetCase: caseName, // то, что ты сам достал из query
-      originalText: text, // то, что пришло в URL
-      convertedText: findObject.convertedText, // то, что вернул convertToCase
+      originalCase: findObject.originalCase,
+      targetCase: caseName,
+      originalText: text,
+      convertedText: findObject.convertedText,
     };
 
     res.setHeader('Content-Type', 'application/json');
     res.statusCode = 200;
     res.statusMessage = 'OK';
     res.end(JSON.stringify(result));
-
-    // res.end(`Converted: ${result}`);
   });
 
   // server.listen(PORT, () => {
-  //   // eslint-disable-next-line no-console
   //   console.log(`Server started on WOW-WOW port ${PORT}`);
   // });
 
