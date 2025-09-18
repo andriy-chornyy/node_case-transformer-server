@@ -12,19 +12,15 @@ function createServer() {
     // const normalizedURL = new URL(req.url, `http://localhost:${PORT}`);
     const [path, queryString] = req.url.split('?');
 
-    const text = path.slice(1); // текст из URL
+    const text = decodeURIComponent((path || '').slice(1)); // текст из URL
 
     // получаем значение toCase из query, если есть
-    const toCaseParam = queryString?.split('=')[1] || '';
-    const caseName = cases.includes(toCaseParam.toUpperCase())
-      ? toCaseParam.toUpperCase()
-      : '';
+    // const toCaseParam = queryString?.split('=')[1] || '';
 
-    let findObject = {};
+    const params = new URLSearchParams(queryString || '');
+    const toCaseParam = params.get('toCase');
 
-    if (text && caseName) {
-      findObject = convertToCase(text, caseName);
-    }
+    const caseName = cases.includes(toCaseParam) ? toCaseParam : '';
 
     const errorMessages = [];
 
@@ -57,6 +53,12 @@ function createServer() {
       res.end(JSON.stringify({ errors: errorMessages }));
 
       return;
+    }
+
+    let findObject = {};
+
+    if (text && caseName) {
+      findObject = convertToCase(text, caseName);
     }
 
     const result = {
